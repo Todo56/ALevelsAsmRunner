@@ -2,11 +2,280 @@
 <html lang="en">
 
 	<head>
-
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+		    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+		        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.2/ace.js" integrity="sha512-NSbvq6xPdfFIa2wwSh8vtsPL7AyYAYRAUWRDCqFH34kYIjQ4M7H2POiULf3CH11TRcq3Ww6FZDdLZ8msYhMxjg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<title>A Levels Assembly Language</title>
+		<style>
+			.codeInput {
+					height: 500px;
+			
+			}
+			.memoryTable {
+				font-size: 10px;
+			}
+		</style>
 	</head>
-	<body>
+	<body class='containter'>
+		<div class ='row'>
+			<div class='col-6'>
+				<div class='codeInput' id='editor'></div>
+				<br>
+				<div class ='row'>
+					<div class='col-6'>
+						<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th scope="col"></th>
+      <th scope="col">Special registers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">ACC</th>
+      <td><input class="form-control form-control-sm" type="text" style="width: 40px" placeholder="" id='acc'></td>
+    </tr>
+    <tr>
+      <th scope="row">IR</th>
+      <td><input class="form-control form-control-sm" type="text" style="width: 40px" placeholder="" id='ir'></td>
+    </tr>
+    <tr>
+      <th scope="row">PC</th>
+      <td><input class="form-control form-control-sm" type="text" style="width: 40px" value="0" id='pc'></td>
+    </tr>
+  </tbody>
+</table>
+					</div>
+					<div class='col-6'>
+                                       		<button type="button" class="btn btn-primary btn-sm">Upload to memory</button>
+						<button type="button" onclick="parseCode()" class="btn btn-success btn-sm">Run</button>
+						<button type="button" class="btn btn-danger btn-sm">Clear</button>
+					</div>
+				</div>
+			</div>
+			<div class='col-6'>
+				<table class='table table-bordered memoryTable'>
+					<thead>
+   <tr id='memoryX'>
+<th scope="col"></th>
+<th scope="col" id='col0'>0</th>
+      <th scope="col" id='col1'>1</th>
+      <th scope="col" id='col2'>2</th>
+      <th scope="col" id='col3'>3</th>
+      <th scope="col" id='col4'>4</th>
+   	 <th scope="col" id='col5'>5</th> 
+    <th scope="col" id='col6'>6</th>
+	 <th scope="col" id='col7'>7</th>
+
+	  <th scope="col" id='col8'>8</th>
+	 <th scope="col" id='col9'>9</th>
+   </tr>
+  </thead>
+  <tbody>
+        <tr>
+      <th scope="row" id='row0'>0</th>
+    </tr>
+    <tr>
+      <th scope="row" id='row1'>1</th>
+    </tr>
+    <tr>
+      <th scope="row" id='row2'>2</th>
+    </tr>
+    <tr>
+      <th scope="row" id='row3'>3</th>
+    </tr>
+<tr>
+      <th scope="row" id='row4'>4</th>
+    </tr>
+<tr>
+      <th scope="row" id='row5'>5</th>
+</tr>
+<tr>
+      <th scope="row" id='row6'>6</th>
+    </tr>
+<tr>
+      <th scope="row" id='row7'>7</th>
+    </tr>
+<tr>
+      <th scope="row" id='row8'>8</th>
+    </tr>
+<tr>
+      <th scope="row" id='row9'>9</th>
+    </tr>
+
+<tr>
+      <th scope="row" id='row10'>10</th>
+    </tr>
+
+  				</tbody>
+				</table>
+			</div>
+		</div>
 
 
 	</body>
+	<script>
+		let ACC = null;
+		let IR = null;
+		let loadingMemory = 0;
+		let PC = 0;
+		function loadMemory(){
+			for(let i = 0; i < 11; i++){
+				let parentElement = document.getElementById("row" + i).parentElement;
+				for(let j = 0; j < 10; j++){
+							parentElement.innerHTML += `<th scope="col"><input id='${i}-${j}' class="form-control form-control-sm" type="text" style = 'width: 40px; font-size: 10px' placeholder="${i}${j}"></th>`;
+				}
+			}
+		}
+		loadMemory();
+			
+		let editor = ace.edit("editor");
+    		editor.setTheme("ace/theme/twilight");
+   		editor.session.setMode("ace/mode/assembly_x86");
+
+
+		const Command = class {
+			constructor(commandName, description, argNum, usage){
+				this.name = commandName;
+				this.description = description;
+				this.argNum = argNum;
+				this.usage = usage;
+			}
+		}
+
+		
+		const LDMCommand = class extends Command {
+			constructor(){
+				super("LDM", "Loads a decimal number into ACC.", [1], "LDM #n");
+			}
+			execute(num){
+
+			}
+			convertToStore(args){
+				let num = args[0].split("#");
+				return ["01", num[1].toString(16)];
+			}
+		}
+
+		let commands = {
+                                LDM: new LDMCommand
+                                };
+		let labelTable = {};
+		
+		function parseCode(){
+			let code = editor.getValue();
+			let lines = code.split("\n");
+			let context = null;
+			for(let i = 1; lines.length >= i; i++){
+				let line = lines[i-1];
+				let testForLabel = line.split(":");
+				if(testForLabel.length == 2){
+					labelTable[testForLabel[0]] = [];
+					labelTable[testForLabel[0]][i - 1] = testForLabel[1].trim();
+					context = testForLabel[0];
+					continue;
+				}
+				if(context == null){
+					alert("Missing label related to line " + i);
+					return;
+				}
+				let first8 = line.slice(0, 8);
+				if(first8 != "        "){
+					alert("Indentation error in line " + i);
+				}
+
+				labelTable[context][i - 1]= line.trim();
+			}
+			loadCodeIntoMemory(labelTable);
+			alert("Code is valid! You can now run.");
+		}
+
+		function loadCodeIntoMemory(labelTable){
+			console.log(labelTable)
+			let memorySpace = 0;
+			for(let label in labelTable){
+				let arr = labelTable[label];
+				for(let line in arr){
+					loadCommand(arr[line]);							
+				}
+			}
+		}
+	
+		function convertNum(num){
+			switch(num){
+			case 0:
+				return "0-0";
+				break;
+			case 1:
+				return "0-1";
+				break;
+			case 2:
+				return "0-2";
+				break;
+			case 3:
+				return "0-3";
+				break;
+			case 4:
+				return "0-4";
+				break;
+			case 5:
+				return "0-5";
+				break;
+			case 6:
+				return "0-6";
+				break;
+			case 7:
+				return "0-7";
+				break;
+			case 8:
+				return "0-8";
+				break;
+			case 9: 
+				return "0-9";
+				break;	
+			}
+		
+		}
+		
+		function loadCommand(command){
+			let args = command.split(" ");
+			let commandName = args[0];
+			let actualCommand = commands[commandName];
+			args.shift();
+			console.log(args);
+			let loadAr = actualCommand.convertToStore(args);
+			for(let key in loadAr){
+				let valueToLoad = loadAr[key];
+				storeInMemory(loadingMemory, valueToLoad);
+				loadingMemory++;
+			}
+		}
+
+		function storeInMemory(memoryNum, value){
+			let str = memoryNum.toString();
+			let output;
+			if(convertNum(memoryNum)){
+				output = convertNum(memoryNum);
+			} else {
+				let position = 2;
+				output = [str.slice(0, position), "-", a.slice(position)].join('');
+			}
+			console.log(output);
+			document.getElementById(output).value = value;
+		}
+
+		function executeCommand(command, lineNumber){
+                        let args = command.split(" ");
+                	console.log("Executing command " + args[0]);
+		}
+/*
+start:  LDM #1
+        LDM #100
+stop:   LDM #1
+	       */
+	</script>
+
 
 </html>
